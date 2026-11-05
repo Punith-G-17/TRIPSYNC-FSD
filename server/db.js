@@ -34,5 +34,19 @@ CREATE TABLE IF NOT EXISTS expense_splits (
 CREATE TABLE IF NOT EXISTS items (
   id INTEGER PRIMARY KEY AUTOINCREMENT, tripId INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
   label TEXT NOT NULL, assignee INTEGER REFERENCES users(id), done INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS activity_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, tripId INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  userName TEXT NOT NULL, message TEXT NOT NULL, createdAt TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, tripId INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  userId INTEGER NOT NULL REFERENCES users(id), body TEXT NOT NULL, createdAt TEXT DEFAULT CURRENT_TIMESTAMP);
 `);
+
+// Tiny migration helper: add a column to an existing database without losing data
+const addColumn = (table, column, def) => {
+  const has = db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+  if (!has) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${def}`);
+};
+addColumn('trips', 'budget', 'REAL DEFAULT 0');           // total group budget (shown as a progress bar)
+addColumn('activities', 'kind', "TEXT DEFAULT 'Sightseeing'"); // Sightseeing, Food, Transport, Stay, Fun
 export default db;

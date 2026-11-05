@@ -31,6 +31,13 @@ Built as a Full Stack Development mini project with **React, Node.js, Express, S
 - **Expense splitter:** log who paid, split between chosen members, and get a settle-up summary of who pays whom.
 - **Packing checklist:** shared items that can be assigned to people and ticked off.
 - **Dashboard:** total spend, spend by category and by person, a countdown to departure, and a live activity feed.
+- **Notes board:** a shared wall for tips, links and reminders (you can delete your own notes).
+- **Budget tracker:** the admin sets a group budget and the dashboard shows a progress bar that turns red as you approach it.
+- **Itinerary categories:** tag activities as Sightseeing, Food, Transport, Stay or Fun and see them on a colour-coded timeline.
+- **Persistent activity feed:** the "Live activity" log is stored in the database, so it survives refreshes.
+- **Trip settings:** the admin can edit trip details or delete the trip; other members can leave.
+- **CSV export:** download all expenses as a spreadsheet-ready file.
+- **Dark mode** and a fully responsive layout, with toasts and loading skeletons.
 - **Real-time sync:** when one person changes anything, everyone else's screen updates instantly (Socket.io).
 
 ## Tech stack
@@ -123,6 +130,11 @@ All `/api/trips` routes need the header `Authorization: Bearer <token>` and only
 | GET | `/api/trips` | List your trips |
 | POST | `/api/trips` | Create a trip |
 | POST | `/api/trips/join` | Join a trip with an invite code |
+| PATCH / DELETE | `/api/trips/:id` | Edit details and budget, or delete the trip (admin only) |
+| POST | `/api/trips/:id/leave` | Leave a trip (non-admin members) |
+| GET | `/api/trips/:id/export` | Download expenses as CSV |
+| POST / DELETE | `/api/trips/:id/notes[/:cid]` | Post or delete a note |
+| GET | `/api/health` | Simple health check |
 | GET | `/api/trips/:id` | Full trip data: members, activities, polls, expenses, checklist, settle-up |
 | POST / DELETE | `/api/trips/:id/activities[/:cid]` | Add or remove an itinerary activity |
 | POST / DELETE | `/api/trips/:id/expenses[/:cid]` | Add or remove an expense |
@@ -136,7 +148,9 @@ All `/api/trips` routes need the header `Authorization: Bearer <token>` and only
 SQLite with foreign keys and `ON DELETE CASCADE`.
 
 ```
-users ──< members >── trips ──< activities
+users ──< members >── trips ──< activities (with kind)
+                        ├──< activity_log
+                        ├──< notes
                         ├──< polls ──< poll_options ──< votes >── users
                         ├──< expenses ──< expense_splits >── users
                         └──< items
@@ -147,13 +161,13 @@ users ──< members >── trips ──< activities
 - Passwords are hashed with bcrypt; tokens expire after 7 days.
 - Every trip route checks membership; only the admin can lock polls.
 - All SQL uses parameterised queries; multi-row writes run inside transactions.
+- Login and register are rate limited (20 tries per 15 minutes per IP); basic security headers are set on every response.
 - Socket connections must present a valid JWT and can only join trips they belong to.
 - CORS is open (`*`) for local development; restrict it before deploying.
 
 ## Roadmap
 
 - Export the itinerary as PDF or CSV
-- Dark mode
 - Trip photo gallery links
 - Deploy (Render or Railway for the API, Netlify or Vercel for the client)
 
